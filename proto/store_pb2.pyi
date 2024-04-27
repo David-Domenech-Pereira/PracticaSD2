@@ -4,6 +4,38 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class askVoteGetRequest(_message.Message):
+    __slots__ = ("key",)
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    key: str
+    def __init__(self, key: _Optional[str] = ...) -> None: ...
+
+class askVoteGetRespone(_message.Message):
+    __slots__ = ("success", "value", "vote_size")
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    VOTE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    value: str
+    vote_size: int
+    def __init__(self, success: bool = ..., value: _Optional[str] = ..., vote_size: _Optional[int] = ...) -> None: ...
+
+class askVotePutRespone(_message.Message):
+    __slots__ = ("success", "vote_size")
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    VOTE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    vote_size: int
+    def __init__(self, success: bool = ..., vote_size: _Optional[int] = ...) -> None: ...
+
+class askVotePutRequest(_message.Message):
+    __slots__ = ("key", "value")
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    key: str
+    value: str
+    def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+
 class dMessage(_message.Message):
     __slots__ = ("ip", "port")
     IP_FIELD_NUMBER: _ClassVar[int]

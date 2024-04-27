@@ -16,6 +16,30 @@ service KeyValueStore {
   rpc doCommit(doCommitRequest) returns (doCommitRespone);
   
   rpc discoverMessage(dMessage) returns (Empty);
+
+  rpc askVotePut(askVotePutRequest) returns (askVotePutRespone);
+
+  rpc askVoteGet(askVoteGetRequest) returns (askVoteGetRespone);
+}
+
+message askVoteGetRequest{
+  string key = 1;
+}
+
+message askVoteGetRespone{
+  bool success = 1;
+  string value = 2;
+  int32 vote_size = 3;
+}
+
+message askVotePutRespone{
+  bool success = 1;
+  int32 vote_size = 2;
+}
+
+message askVotePutRequest{
+  string key = 1;
+  string value = 2;
 }
 
 message dMessage{

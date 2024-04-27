@@ -44,6 +44,12 @@ class StoreService:
        
         return store_pb2.Empty()
     
+    def askVotePut(self, vote_request, context):
+        return store_pb2.askVotePutRespone(success=False, vote_size=0)
+    
+    def askVoteGet(self, vote_request, context):
+        return store_pb2.askVoteGetRespone(success=False, vote_size=0, value="")
+    
 class MasterService(StoreService):
     
     def setDiscoverQueue(self, discover_queue):
@@ -66,5 +72,42 @@ class MasterService(StoreService):
         return store_pb2.Empty()
         
 
+class NodeService(StoreService):
+    def setVoteSize(self, vote_size):
+        self.vote_size = vote_size
+    def __init__(self):
+        self.vote_size = 1
+        super().__init__()
+    
+    def put(self, put_request, context):
+        from decentralized import node
+        if(node.askVote(self.store, put_request, context, "put")):
+            self.store[put_request.key] = put_request.value
+            return store_pb2.PutResponse(success=True)
+        else:
+            return store_pb2.PutResponse(success=False)
+    
+    def get(self, get_request, context):
+        from decentralized import node
+        value = node.askGetVote(self.store, get_request, context, self.store.get(get_request.key), self.vote_size)
+        if value is None:
+            return store_pb2.GetResponse(value="", found=False)
+        return store_pb2.GetResponse(value=value, found=True)
+    
+    def askVotePut(self, vote_request, context):
+        # devolver success = True
+        return store_pb2.askVotePutRespone(success=True, vote_size=self.vote_size)
+        
+    def askVoteGet(self, vote_request, context):
+        # si la key esta en el store devolver success = True
+        # si no devolver success = False
+        value = self.store.get(vote_request.key)
+        if value is None:
+            return store_pb2.askVoteGetRespone(success=False, vote_size=self.vote_size, value="")
+        return store_pb2.askVoteGetRespone(success=True, vote_size=self.vote_size, value=value)
+        
+        
+
 store_service = StoreService()
 master_service = MasterService()
+node_service = NodeService()

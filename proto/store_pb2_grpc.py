@@ -49,6 +49,16 @@ class KeyValueStoreStub(object):
                 request_serializer=store__pb2.dMessage.SerializeToString,
                 response_deserializer=store__pb2.Empty.FromString,
                 )
+        self.askVotePut = channel.unary_unary(
+                '/distributedstore.KeyValueStore/askVotePut',
+                request_serializer=store__pb2.askVotePutRequest.SerializeToString,
+                response_deserializer=store__pb2.askVotePutRespone.FromString,
+                )
+        self.askVoteGet = channel.unary_unary(
+                '/distributedstore.KeyValueStore/askVoteGet',
+                request_serializer=store__pb2.askVoteGetRequest.SerializeToString,
+                response_deserializer=store__pb2.askVoteGetRespone.FromString,
+                )
 
 
 class KeyValueStoreServicer(object):
@@ -96,6 +106,18 @@ class KeyValueStoreServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def askVotePut(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def askVoteGet(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_KeyValueStoreServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -133,6 +155,16 @@ def add_KeyValueStoreServicer_to_server(servicer, server):
                     servicer.discoverMessage,
                     request_deserializer=store__pb2.dMessage.FromString,
                     response_serializer=store__pb2.Empty.SerializeToString,
+            ),
+            'askVotePut': grpc.unary_unary_rpc_method_handler(
+                    servicer.askVotePut,
+                    request_deserializer=store__pb2.askVotePutRequest.FromString,
+                    response_serializer=store__pb2.askVotePutRespone.SerializeToString,
+            ),
+            'askVoteGet': grpc.unary_unary_rpc_method_handler(
+                    servicer.askVoteGet,
+                    request_deserializer=store__pb2.askVoteGetRequest.FromString,
+                    response_serializer=store__pb2.askVoteGetRespone.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -260,5 +292,39 @@ class KeyValueStore(object):
         return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/discoverMessage',
             store__pb2.dMessage.SerializeToString,
             store__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def askVotePut(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/askVotePut',
+            store__pb2.askVotePutRequest.SerializeToString,
+            store__pb2.askVotePutRespone.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def askVoteGet(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/askVoteGet',
+            store__pb2.askVoteGetRequest.SerializeToString,
+            store__pb2.askVoteGetRespone.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
