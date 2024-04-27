@@ -16,9 +16,18 @@ quorum_put = 3
 quorum_get = 2
 ipports = ['localhost:32771','localhost:32771', 'localhost:32772'] # TODO detect neighbors
 ipport_loc = ""
+global this_vote_size
+this_vote_size = 1
 def main(port):
     ipport_loc = "localhost:"+str(port)
-    node_service.setVoteSize(1)
+   
+    # si es el segundo ponemos voto 2
+    if port == 32771:
+        print("Vote size 2")
+        node_service.setVoteSize(2)
+        this_vote_size = 2
+    else:
+         node_service.setVoteSize(1)
     iniciar_grpcApi(port)
 
 def iniciar_grpcApi(port):
@@ -37,7 +46,7 @@ def askPutVote(store, put_request, context):
     votos_totales = 0
     for ipport in ipports:
         if ipport == ipport_loc:
-            votos_totales += 1
+            votos_totales += this_vote_size
             continue
         channel = grpc.insecure_channel(ipport)
         stub = store_pb2_grpc.KeyValueStoreStub(channel)
@@ -45,8 +54,10 @@ def askPutVote(store, put_request, context):
         pot = stub.askVotePut(doCommit)
         if pot.success:
             votos_totales += pot.vote_size
+    print("Votos totales: "+str(votos_totales))
     #si es >= quorum_put
     if votos_totales >= quorum_put:
+        print("DoCommit")
         # hacemos un doCommit
         for ipport in ipports:
             channel = grpc.insecure_channel(ipport)
@@ -55,6 +66,7 @@ def askPutVote(store, put_request, context):
             pot = stub.doCommit(doCommit)
             if not pot.success:
                 return False
+        return True
     else:
         return False
         

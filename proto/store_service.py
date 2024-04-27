@@ -76,12 +76,12 @@ class NodeService(StoreService):
     def setVoteSize(self, vote_size):
         self.vote_size = vote_size
     def __init__(self):
-        self.vote_size = 1
+        self.vote_size = 3
         super().__init__()
     
     def put(self, put_request, context):
         from decentralized import node
-        if(node.askVote(self.store, put_request, context, "put")):
+        if(node.askPutVote(self.store, put_request, context)):
             self.store[put_request.key] = put_request.value
             return store_pb2.PutResponse(success=True)
         else:
@@ -96,12 +96,15 @@ class NodeService(StoreService):
     
     def askVotePut(self, vote_request, context):
         # devolver success = True
+        time.sleep(self.slow_down_seconds)
         return store_pb2.askVotePutRespone(success=True, vote_size=self.vote_size)
         
     def askVoteGet(self, vote_request, context):
         # si la key esta en el store devolver success = True
         # si no devolver success = False
         value = self.store.get(vote_request.key)
+        time.sleep(self.slow_down_seconds)
+        print("Vote request for key: "+vote_request.key+" value: "+str(value)+" vote_size: "+str(self.vote_size))
         if value is None:
             return store_pb2.askVoteGetRespone(success=False, vote_size=self.vote_size, value="")
         return store_pb2.askVoteGetRespone(success=True, vote_size=self.vote_size, value=value)

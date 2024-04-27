@@ -1,1 +1,11 @@
 
+ nodes:
+      - id: 1
+        ip: localhost
+        port: 32770
+      - id: 2
+        ip: localhost
+        port: 32771
+      - id: 3
+        ip: localhost
+        port: 32772
