@@ -13,10 +13,11 @@ except:
 from proto.store_service import master_service
 
 store = {}
-ipports = ['localhost:32771','localhost:32772']
+ipports = []
 
 def main():
     master_service.set_store(store)
+    master_service.setDiscoverQueue(ipports)
     iniciar_grpcApi()
     
     

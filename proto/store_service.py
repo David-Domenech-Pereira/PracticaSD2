@@ -40,9 +40,14 @@ class StoreService:
         # return success = True
         self.store[commit_request.key] = commit_request.value
         return store_pb2.doCommitRespone(success=True)
-    
+    def discoverMessage(self, discover_request, context):
+       
+        return store_pb2.Empty()
     
 class MasterService(StoreService):
+    
+    def setDiscoverQueue(self, discover_queue):
+        self.discover_queue = discover_queue
     def __init__(self):
         super().__init__()
     def put(self, put_request, context):
@@ -55,7 +60,10 @@ class MasterService(StoreService):
         else:
             # si no devolvemos PutResponse(False)
             return store_pb2.PutResponse(success=False)
-    
+    def discoverMessage(self, discover_request, context):
+        
+        self.discover_queue.append(discover_request.ip+":"+str(discover_request.port))
+        return store_pb2.Empty()
         
 
 store_service = StoreService()

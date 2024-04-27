@@ -44,6 +44,11 @@ class KeyValueStoreStub(object):
                 request_serializer=store__pb2.doCommitRequest.SerializeToString,
                 response_deserializer=store__pb2.doCommitRespone.FromString,
                 )
+        self.discoverMessage = channel.unary_unary(
+                '/distributedstore.KeyValueStore/discoverMessage',
+                request_serializer=store__pb2.dMessage.SerializeToString,
+                response_deserializer=store__pb2.Empty.FromString,
+                )
 
 
 class KeyValueStoreServicer(object):
@@ -85,6 +90,12 @@ class KeyValueStoreServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def discoverMessage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_KeyValueStoreServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -117,6 +128,11 @@ def add_KeyValueStoreServicer_to_server(servicer, server):
                     servicer.doCommit,
                     request_deserializer=store__pb2.doCommitRequest.FromString,
                     response_serializer=store__pb2.doCommitRespone.SerializeToString,
+            ),
+            'discoverMessage': grpc.unary_unary_rpc_method_handler(
+                    servicer.discoverMessage,
+                    request_deserializer=store__pb2.dMessage.FromString,
+                    response_serializer=store__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -227,5 +243,22 @@ class KeyValueStore(object):
         return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/doCommit',
             store__pb2.doCommitRequest.SerializeToString,
             store__pb2.doCommitRespone.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def discoverMessage(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/discoverMessage',
+            store__pb2.dMessage.SerializeToString,
+            store__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
