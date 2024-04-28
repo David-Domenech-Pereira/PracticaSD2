@@ -1,6 +1,8 @@
 
 import grpc
 import time
+import socket
+import random
 from concurrent.futures import ThreadPoolExecutor
 from concurrent import futures
 try:
@@ -14,13 +16,54 @@ from proto.store_service import node_service
 
 quorum_put = 3
 quorum_get = 2
-ipports = ['localhost:32771','localhost:32771', 'localhost:32772'] # TODO detect neighbors
+ipports = [] 
 ipport_loc = ""
 global this_vote_size
 this_vote_size = 1
+
+def listen_for_broadcasts():
+    """Funció que escolta tots els broadcasts (nous nodes)."""
+    # Cada node tindrà un port random entre 25000 i 26000
+    # Només es permeten 1000 nodes
+    port = 25000 + random.randint(0, 1000)
+    
+    
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.bind(('', port))  # Cambiado a puerto 5000
+
+    while True:
+        data, addr = sock.recvfrom(1024)
+        
+        # parse data
+        parts = data.decode().split(";")
+        if len(parts) == 2 and parts[0] == "Discovery":
+            ipport = parts[1]
+            if ipport not in ipports:
+                ipports.append(ipport)
+                print(f"Added {ipport} to ipports")
+                # Com és una trama broadcast, no cal respondre, així no sobrecarreguem la xarxa
+        
+
+def send_broadcast(ipport):
+    """Función que envia una trama broadcast a tots els ports enre 25000 i 26000."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    for port in range(25000, 26000):
+        sock.sendto(b"Discovery;"+bytes(ipport,"utf-8"), ('255.255.255.255', port))  # Cambiado a puerto 5000
+        
+
+
+
+
 def main(port):
+    # encendemos el listener de broadcasts
+    listener_thread = futures.ThreadPoolExecutor(max_workers=1)
+    listener_thread.submit(listen_for_broadcasts)
     ipport_loc = "localhost:"+str(port)
-   
+    send_broadcast(ipport_loc)
     # si es el segundo ponemos voto 2
     if port == 32771:
         print("Vote size 2")
@@ -31,6 +74,7 @@ def main(port):
     iniciar_grpcApi(port)
 
 def iniciar_grpcApi(port):
+    """Funció que inicialitza el servidor gRPC."""
     # Inicialitzem el servidor gRPC
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     store_pb2_grpc.add_KeyValueStoreServicer_to_server(node_service, server)
@@ -42,6 +86,7 @@ def iniciar_grpcApi(port):
     
     
 def askPutVote(store, put_request, context):
+    """Funció que fa una votació per fer un put."""
     # send a vote request to all nodes
     votos_totales = 0
     for ipport in ipports:

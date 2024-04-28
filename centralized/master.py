@@ -27,6 +27,7 @@ def main():
 
     
 def iniciar_grpcApi():
+    """Funció que inicialitza el servidor gRPC."""
     # Inicialitzem el servidor gRPC
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     store_pb2_grpc.add_KeyValueStoreServicer_to_server(master_service, server)
@@ -36,6 +37,7 @@ def iniciar_grpcApi():
     server.wait_for_termination()
     
 def two_phase_commit(store, put_request, context):
+    """Funció que fa un put amb 2 phase commit."""
     
     for ipport in ipports:
         

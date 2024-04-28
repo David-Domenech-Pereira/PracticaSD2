@@ -20,6 +20,7 @@ def main(port):
         pass
     
 def iniciar_grpcApi(port):
+    """Funció que inicialitza el servidor gRPC."""
     # Inicialitzem el servidor gRPC
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     store_pb2_grpc.add_KeyValueStoreServicer_to_server(store_service, server)
@@ -32,6 +33,7 @@ def iniciar_grpcApi(port):
     
     
 def registrarClient(ip, port):
+    """Funció que registra un nou client al servidor master."""
     
     master="localhost:32770"
     channel = grpc.insecure_channel(master)
