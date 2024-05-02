@@ -3,6 +3,8 @@ import grpc
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent import futures
+from Redis import start_redis_server
+import multiprocessing
 try:
     from proto import store_pb2_grpc, store_pb2
     from proto.store_service import master_service
@@ -18,8 +20,10 @@ ipports = []
 def main():
     master_service.set_store(store)
     master_service.setDiscoverQueue(ipports)
+    server_processRedis = multiprocessing.Process(target=start_redis_server)
+    server_processRedis.start()
     iniciar_grpcApi()
-    
+  
     
     while True:
         time.sleep(86400)
@@ -38,25 +42,28 @@ def iniciar_grpcApi():
     
 def two_phase_commit(store, put_request, context):
     """Funció que fa un put amb 2 phase commit."""
-    
-    for ipport in ipports:
-        
-        channel = grpc.insecure_channel(ipport)
+    try:
+        for ipport in ipports:
+            
+            channel = grpc.insecure_channel(ipport)
 
-        # create a stub (client)
-        stub = store_pb2_grpc.KeyValueStoreStub(channel) #MessagingServiceStub metode del .proto
-        
-        # create a valid request message
-        doCommit = store_pb2.CommitRequest(key=put_request.key, value=put_request.value)
-        pot = stub.canCommit(doCommit) #sendMessage metode del grpc server
-        if not pot.success:
-            return False
-    # si estem aqui es que tots els slaves han dit que si
-    for ipport in ipports:
-        channel = grpc.insecure_channel(ipport)
-        stub = store_pb2_grpc.KeyValueStoreStub(channel)
-        doCommit = store_pb2.doCommitRequest(key=put_request.key, value=put_request.value)
-        pot = stub.doCommit(doCommit)
-        if not pot.success:
-            return False
-    return True
+            # create a stub (client)
+            stub = store_pb2_grpc.KeyValueStoreStub(channel) #MessagingServiceStub metode del .proto
+            
+            # create a valid request message
+            doCommit = store_pb2.CommitRequest(key=put_request.key, value=put_request.value)
+            pot = stub.canCommit(doCommit) #sendMessage metode del grpc server
+            if not pot.success:
+                return False
+        # si estem aqui es que tots els slaves han dit que si
+        for ipport in ipports:
+            channel = grpc.insecure_channel(ipport)
+            stub = store_pb2_grpc.KeyValueStoreStub(channel)
+            doCommit = store_pb2.doCommitRequest(key=put_request.key, value=put_request.value)
+            pot = stub.doCommit(doCommit)
+            if not pot.success:
+                return False
+        return True
+    except:
+        # in case of a node failing in the middle of the process
+        return False

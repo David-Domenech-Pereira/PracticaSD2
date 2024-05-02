@@ -5,6 +5,8 @@ import socket
 import random
 from concurrent.futures import ThreadPoolExecutor
 from concurrent import futures
+from Redis import start_redis_server
+import multiprocessing
 try:
     from proto import store_pb2_grpc, store_pb2
     from proto.store_service import node_service
@@ -66,11 +68,15 @@ def main(port):
     send_broadcast(ipport_loc)
     # si es el segundo ponemos voto 2
     if port == 32771:
+        # TODO Que fem amb això?
         print("Vote size 2")
         node_service.setVoteSize(2)
         this_vote_size = 2
     else:
          node_service.setVoteSize(1)
+
+    server_processRedis = multiprocessing.Process(target=start_redis_server)
+    server_processRedis.start()
     iniciar_grpcApi(port)
 
 def iniciar_grpcApi(port):
@@ -88,59 +94,80 @@ def iniciar_grpcApi(port):
 def askPutVote(store, put_request, context):
     """Funció que fa una votació per fer un put."""
     # send a vote request to all nodes
-    votos_totales = 0
-    for ipport in ipports:
-        if ipport == ipport_loc:
-            votos_totales += this_vote_size
-            continue
-        channel = grpc.insecure_channel(ipport)
-        stub = store_pb2_grpc.KeyValueStoreStub(channel)
-        doCommit = store_pb2.askVotePutRequest(key=put_request.key, value=put_request.value)
-        pot = stub.askVotePut(doCommit)
-        if pot.success:
-            votos_totales += pot.vote_size
-    print("Votos totales: "+str(votos_totales))
-    #si es >= quorum_put
-    if votos_totales >= quorum_put:
-        print("DoCommit")
-        # hacemos un doCommit
+    try:
+        votos_totales = 0
         for ipport in ipports:
+            if ipport == ipport_loc:
+                # comptem a nosaltres
+                votos_totales += this_vote_size
+                continue
+            # fem la crida grpc
             channel = grpc.insecure_channel(ipport)
             stub = store_pb2_grpc.KeyValueStoreStub(channel)
-            doCommit = store_pb2.doCommitRequest(key=put_request.key, value=put_request.value)
-            pot = stub.doCommit(doCommit)
-            if not pot.success:
-                return False
-        return True
-    else:
+            doCommit = store_pb2.askVotePutRequest(key=put_request.key, value=put_request.value)
+            pot = stub.askVotePut(doCommit)
+            if pot.success:
+                # si ha dit que si sumem els vots
+                votos_totales += pot.vote_size
+        print("Votos totales: "+str(votos_totales))
+        #si es >= quorum_put
+        if votos_totales >= quorum_put:
+            print("DoCommit")
+            # hacemos un doCommit
+            for ipport in ipports:
+                channel = grpc.insecure_channel(ipport)
+                stub = store_pb2_grpc.KeyValueStoreStub(channel)
+                doCommit = store_pb2.doCommitRequest(key=put_request.key, value=put_request.value)
+                pot = stub.doCommit(doCommit)
+                if not pot.success:
+                    # si falla algun return False
+                    return False
+            return True
+        else:
+            return False
+    except:
+        # en caso de que caiga algo
         return False
         
     
 def askGetVote(store, get_request, context, local_value, local_vote_size):
     # send a vote request to all nodes
-    values ={}
-    values[local_value] = local_vote_size
-    for ipport in ipports:
-        if ipport == ipport_loc:
-            continue
-        channel = grpc.insecure_channel(ipport)
-        stub = store_pb2_grpc.KeyValueStoreStub(channel)
-        doCommit = store_pb2.askVoteGetRequest(key=get_request.key)
-        pot = stub.askVoteGet(doCommit)
-        if pot.success:
-            if pot.value in values:
-                values[pot.value] += pot.vote_size
-            else:
-                values[pot.value] = pot.vote_size
-    #Cogemos el valor con mas votos y >= quorum_get
-    max_value = local_value
-    max_vote = local_vote_size
-    for key in values:
-        if values[key] > max_vote:
-            max_vote = values[key]
-            max_value = key
-    if max_vote >= quorum_get:
-        return max_value
-    else:
+    try:
+        values ={}
+        values[local_value] = local_vote_size
+        for ipport in ipports:
+            if ipport == ipport_loc:
+                # comptem a nosaltres
+                continue
+            # fem la crida grpc
+            channel = grpc.insecure_channel(ipport)
+            stub = store_pb2_grpc.KeyValueStoreStub(channel)
+            doCommit = store_pb2.askVoteGetRequest(key=get_request.key)
+            pot = stub.askVoteGet(doCommit)
+            if pot.success:
+                # si ha dit que si sumem els vots
+                if pot.value in values:
+                    # si ja hi es sumem
+                    values[pot.value] += pot.vote_size
+                else:
+                    # si no hi es creem
+                    values[pot.value] = pot.vote_size
+                    
+        #Cogemos el valor con mas votos y >= quorum_get
+        max_value = local_value
+        max_vote = local_vote_size
+        for key in values:
+            # si te mas votos y es >= quorum_get
+            if values[key] > max_vote:
+                max_vote = values[key]
+                max_value = key
+        # solo devolvemos el valor si tiene mas votos que el mínimo
+        # sino no hay consenso
+        if max_vote >= quorum_get:
+            return max_value
+        else:
+            return None
+    except:
+        # en caso de que caiga algo
         return None
     

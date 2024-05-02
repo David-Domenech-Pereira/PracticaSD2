@@ -119,7 +119,16 @@ class TestDecentralizedSystem(unittest.TestCase):
         for i in range(2):
             response = self.stub.get(store_pb2.GetRequest(key=f'key{i}'))
             self.assertEqual(response.value, f'value{i}')
-            
+
+    def perform_operations(self, operations_per_process):
+        for _ in range(operations_per_process):
+            node = random.choice(self.config['nodes'])
+            channel_address = f"{node['ip']}:{node['port']}"
+            channel = grpc.insecure_channel(channel_address)
+            stub = store_pb2_grpc.KeyValueStoreStub(channel)
+            stub.put(store_pb2.PutRequest(key="perf_key", value="perf_value"))
+            stub.get(store_pb2.GetRequest(key="perf_key"))    
+
     def test_system_scalability_and_performance(self):
         """Test the system's scalability and performance by simulating high concurrent access."""
         self.logger.info("Testing system scalability and performance...")
@@ -127,25 +136,16 @@ class TestDecentralizedSystem(unittest.TestCase):
         process_count = 10
         operations_per_process = 20
 
-        def perform_operations():
-            for _ in range(operations_per_process):
-                node = random.choice(self.config['nodes'])
-                channel_address = f"{node['ip']}:{node['port']}"
-                channel = grpc.insecure_channel(channel_address)
-                stub = store_pb2_grpc.KeyValueStoreStub(channel)
-                stub.put(store_pb2.PutRequest(key="perf_key", value="perf_value"))
-                stub.get(store_pb2.GetRequest(key="perf_key"))
-
         with concurrent.futures.ProcessPoolExecutor() as executor:
             for _ in range(process_count):
-                executor.submit(perform_operations)
+                executor.submit(self.perform_operations, operations_per_process)
 
         end_time = time.time()
         duration = end_time - start_time
         print(f"Performed {process_count * operations_per_process * 2} operations in {duration:.2f} seconds.")
 
         self.assertLess(duration, 10, "The system took too long to perform the operations.")
-        
+
     
     def test_system_scalability_and_performance_with_slowdown(self):
         
@@ -157,6 +157,7 @@ class TestDecentralizedSystem(unittest.TestCase):
         start_time = time.time()
         process_count = 10
         operations_per_process = 20
+
 
         with concurrent.futures.ProcessPoolExecutor() as executor:
             futures = [executor.submit(self.perform_operations, operations_per_process) for _ in range(process_count)]
