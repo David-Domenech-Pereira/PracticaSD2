@@ -10,7 +10,9 @@ def start_redis_server():
         subprocess.Popen(['redis-server'])
         print("Servidor redis iniciat correctament.")
     except Exception as e:
-        print("Error al iniciar el servidor Redis:", e)
+        #nothing
+        return 1
+    return 0
 
 
     
