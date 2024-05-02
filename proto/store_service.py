@@ -6,11 +6,14 @@ class StoreService:
     # Aquesta classe és la base de les altres dues, és la que tenen els slaves del centralized
     def set_store(self, store):
         self.store = store
-    
+
     def __init__(self):
         self.store = {}
         self.slow_down_seconds = 0
-       
+        self.r = redis.Redis(host='localhost', port=6379, decode_responses=True)# redis.Redis(host='localhost', port=6379)
+        # we get the data from the redis server
+        for key in self.r.scan_iter():
+            self.store[key] = self.r.get(key)
 
     def put(self, put_request, context):
         # forbiden, as the master node will handle this
@@ -68,8 +71,8 @@ class MasterService(StoreService):
         if(master.two_phase_commit(self.store, put_request, context)):
             # si ok devolvemos PutResponse(True)
             self.store[put_request.key] = put_request.value
-            r = redis.Redis(host='localhost', port=6379, decode_responses=True)# redis.Redis(host='localhost', port=6379)
-            r.set(put_request.key, put_request.value)
+           
+            self.r.set(put_request.key, put_request.value)
             return store_pb2.PutResponse(success=True)
         else:
             # si no devolvemos PutResponse(False)
@@ -94,8 +97,7 @@ class NodeService(StoreService):
         # Cridem al algoritme de votació
         if(node.askPutVote(self.store, put_request, context)):
             self.store[put_request.key] = put_request.value
-            r = redis.Redis(host='localhost', port=6379, decode_responses=True)# redis.Redis(host='localhost', port=6379)
-            r.set(put_request.key, put_request.value)
+            self.r.set(put_request.key, put_request.value)
             return store_pb2.PutResponse(success=True)
         else:
             return store_pb2.PutResponse(success=False)
