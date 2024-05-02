@@ -13,7 +13,10 @@ class StoreService:
         self.r = redis.Redis(host='localhost', port=6379, decode_responses=True)# redis.Redis(host='localhost', port=6379)
         # we get the data from the redis server
         for key in self.r.scan_iter():
-            self.store[key] = self.r.get(key)
+            try:
+                self.store[key] = self.r.get(key)
+            except:
+                continue
 
     def put(self, put_request, context):
         # forbiden, as the master node will handle this

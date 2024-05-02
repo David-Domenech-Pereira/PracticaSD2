@@ -62,6 +62,8 @@ def send_broadcast(ipport):
 
 def main(port):
     # encendemos el listener de broadcasts
+    server_processRedis = multiprocessing.Process(target=start_redis_server)
+    server_processRedis.start()
     listener_thread = futures.ThreadPoolExecutor(max_workers=1)
     listener_thread.submit(listen_for_broadcasts)
     ipport_loc = "localhost:"+str(port)
@@ -75,8 +77,7 @@ def main(port):
     else:
          node_service.setVoteSize(1)
 
-    server_processRedis = multiprocessing.Process(target=start_redis_server)
-    server_processRedis.start()
+    
     iniciar_grpcApi(port)
 
 def iniciar_grpcApi(port):

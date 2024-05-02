@@ -18,10 +18,11 @@ store = {}
 ipports = []
 
 def main():
-    master_service.set_store(store)
-    master_service.setDiscoverQueue(ipports)
     server_processRedis = multiprocessing.Process(target=start_redis_server)
     server_processRedis.start()
+    master_service.set_store(store)
+    master_service.setDiscoverQueue(ipports)
+    
     iniciar_grpcApi()
   
     
