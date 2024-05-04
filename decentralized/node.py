@@ -5,7 +5,6 @@ import socket
 import random
 from concurrent.futures import ThreadPoolExecutor
 from concurrent import futures
-from Redis import start_redis_server
 import multiprocessing
 try:
     from proto import store_pb2_grpc, store_pb2
@@ -62,11 +61,11 @@ def send_broadcast(ipport):
 
 def main(port):
     # encendemos el listener de broadcasts
-    server_processRedis = multiprocessing.Process(target=start_redis_server)
-    server_processRedis.start()
     listener_thread = futures.ThreadPoolExecutor(max_workers=1)
     listener_thread.submit(listen_for_broadcasts)
     ipport_loc = "localhost:"+str(port)
+    node_service.setnodeIdentifier("Node"+str(port))
+    node_service.load_values()
     send_broadcast(ipport_loc)
     # si es el segundo ponemos voto 2
     if port == 32771:

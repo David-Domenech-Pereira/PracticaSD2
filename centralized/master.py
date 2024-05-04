@@ -3,7 +3,6 @@ import grpc
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent import futures
-from Redis import start_redis_server
 import multiprocessing
 try:
     from proto import store_pb2_grpc, store_pb2
@@ -19,9 +18,10 @@ ipports = []
 
 def main():
     master_service.set_store(store)
+    master_service.setnodeIdentifier("Master")
+    master_service.load_values()
     master_service.setDiscoverQueue(ipports)
-   # server_processRedis = multiprocessing.Process(target=start_redis_server)
-   # server_processRedis.start()
+
     iniciar_grpcApi()
   
     

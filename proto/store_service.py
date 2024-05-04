@@ -1,19 +1,43 @@
 
 from proto import store_pb2
 import time
-import redis
+import random
 class StoreService:
     # Aquesta classe és la base de les altres dues, és la que tenen els slaves del centralized
     def set_store(self, store):
         self.store = store
 
+    def load_values(self):
+        """Load the values from the persitence service."""
+        # We load it from a file and save it into the store
+        try:
+            file = open("store"+str(self.nodeIdentifier)+".txt", "r")
+            lines = file.readlines()
+            for line in lines:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    self.store[parts[0]] = parts[1].replace("\n", "")
+            file.close()
+        except:
+            print("No file found")
+            # we create the file
+            file = open("store"+str(self.nodeIdentifier)+".txt", "w")
+            file.close()
+            
+    def store_values(self, key, value):
+        """Store the values in the persitence service."""
+        #We save it into a file
+        
+        file = open("store"+str(self.nodeIdentifier)+".txt", "a")
+        file.write(key+":"+value+"\n")
+        file.close()
+    def setnodeIdentifier(self, nodeIdentifier):
+        self.nodeIdentifier = nodeIdentifier  
     def __init__(self):
         self.store = {}
         self.slow_down_seconds = 0
-       # self.r = redis.Redis(host='localhost', port=6379, decode_responses=True)# redis.Redis(host='localhost', port=6379)
-        # we get the data from the redis server
-       # for key in self.r.scan_iter():
-        #    self.store[key] = self.r.get(key)
+        self.nodeIdentifier = random.randint(0, 1000000) # We generate a random number to identify the node
+
 
     def put(self, put_request, context):
         # forbiden, as the master node will handle this
@@ -46,6 +70,7 @@ class StoreService:
     def doCommit(self, commit_request, context):
         # return success = True
         self.store[commit_request.key] = commit_request.value
+        self.store_values(commit_request.key, commit_request.value)
         return store_pb2.doCommitRespone(success=True)
     def discoverMessage(self, discover_request, context):
         # This cannot be called to a slave
@@ -72,7 +97,7 @@ class MasterService(StoreService):
             # si ok devolvemos PutResponse(True)
             self.store[put_request.key] = put_request.value
            
-         #   self.r.set(put_request.key, put_request.value)
+            self.store_values(put_request.key, put_request.value)
             return store_pb2.PutResponse(success=True)
         else:
             # si no devolvemos PutResponse(False)
@@ -97,7 +122,7 @@ class NodeService(StoreService):
         # Cridem al algoritme de votació
         if(node.askPutVote(self.store, put_request, context)):
             self.store[put_request.key] = put_request.value
-           # self.r.set(put_request.key, put_request.value)
+            self.store_values(put_request.key, put_request.value)
             return store_pb2.PutResponse(success=True)
         else:
             return store_pb2.PutResponse(success=False)

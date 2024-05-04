@@ -11,6 +11,8 @@ store = {}
 
 def main(port):
     store_service.set_store(store)
+    store_service.setnodeIdentifier("Slave")
+    store_service.load_values()
     registrarClient("localhost",port)
     
     time.sleep(1)
