@@ -2,6 +2,7 @@
 from proto import store_pb2
 import time
 import random
+import json
 class StoreService:
     # Aquesta classe és la base de les altres dues, és la que tenen els slaves del centralized
     def set_store(self, store):
@@ -74,7 +75,7 @@ class StoreService:
         return store_pb2.doCommitRespone(success=True)
     def discoverMessage(self, discover_request, context):
         # This cannot be called to a slave
-        return store_pb2.Empty()
+        return store_pb2.dResponse(data="")
     
     def askVotePut(self, vote_request, context):
         # forbiden, as the decentralized nodes will handle this
@@ -105,7 +106,9 @@ class MasterService(StoreService):
     def discoverMessage(self, discover_request, context):
         # afegim la ip i port a la llista de clients
         self.discover_queue.append(discover_request.ip+":"+str(discover_request.port))
-        return store_pb2.Empty()
+        # retornem un json amb el contingut de la llista
+        json_cont = json.dumps(self.store)
+        return store_pb2.dResponse(data=json_cont)
         
 
 class NodeService(StoreService):
@@ -120,7 +123,7 @@ class NodeService(StoreService):
         """funció que fa un put request."""
         from decentralized import node
         # Cridem al algoritme de votació
-        if(node.askPutVote(self.store, put_request, context)):
+        if(node.askPutVote(put_request)):
             self.store[put_request.key] = put_request.value
             self.store_values(put_request.key, put_request.value)
             return store_pb2.PutResponse(success=True)
@@ -131,7 +134,7 @@ class NodeService(StoreService):
         """funció que fa un get request."""
         # Cridem al algoritme de votació
         from decentralized import node
-        value = node.askGetVote(self.store, get_request, context, self.store.get(get_request.key), self.vote_size)
+        value = node.askGetVote( get_request,  self.store.get(get_request.key), self.vote_size)
         if value is None:
             return store_pb2.GetResponse(value="", found=False)
         return store_pb2.GetResponse(value=value, found=True)
@@ -153,7 +156,9 @@ class NodeService(StoreService):
             return store_pb2.askVoteGetRespone(success=False, vote_size=self.vote_size, value="")
         return store_pb2.askVoteGetRespone(success=True, vote_size=self.vote_size, value=value)
         
-        
+    def parseJson(self):
+        """Funció que retorna el store en format json."""
+        return json.dumps(self.store)
 
 store_service = StoreService()
 master_service = MasterService()

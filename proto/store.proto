@@ -15,7 +15,7 @@ service KeyValueStore {
 
   rpc doCommit(doCommitRequest) returns (doCommitRespone);
   
-  rpc discoverMessage(dMessage) returns (Empty);
+  rpc discoverMessage(dMessage) returns (dResponse);
 
   rpc askVotePut(askVotePutRequest) returns (askVotePutRespone);
 
@@ -45,6 +45,10 @@ message askVotePutRequest{
 message dMessage{
   string ip = 1;
   int32 port = 2;
+}
+
+message dResponse{
+  string data = 1;
 }
 
 message doCommitRespone{

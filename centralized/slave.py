@@ -1,6 +1,7 @@
 from concurrent import futures
 import time
 import grpc
+import json
 
 from proto import store_pb2_grpc, store_pb2
 
@@ -43,4 +44,14 @@ def registrarClient(ip, port):
     # create a stub (client)
     stub = store_pb2_grpc.KeyValueStoreStub(channel) #MessagingServiceStub metode del .proto
     
-    stub.discoverMessage(store_pb2.dMessage(ip=ip, port=port))
+    response = stub.discoverMessage(store_pb2.dMessage(ip=ip, port=port))
+    
+    # decode the response, we get the json and add manually to the list
+    data = response.data
+    print(data)
+    data = json.loads(data)
+    # we recieve key=>value con los valores para no perder consistencia
+    # no se recibe ippuertos, sino valores para añadir a la lista
+    for key in data:
+        store_service.store[key] = data[key]
+    

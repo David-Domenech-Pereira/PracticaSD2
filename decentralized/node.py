@@ -3,6 +3,7 @@ import grpc
 import time
 import socket
 import random
+import json
 from concurrent.futures import ThreadPoolExecutor
 from concurrent import futures
 import multiprocessing
@@ -22,36 +23,61 @@ ipport_loc = ""
 global this_vote_size
 this_vote_size = 1
 
-def listen_for_broadcasts():
-    """Funció que escolta tots els broadcasts (nous nodes)."""
+def listen_for_broadcasts(sock):
+    """Funció que escolta tots els broadcasts (nous nodes).
+    Si rep un broadcast, respon amb la seva informació.
+    Si rep una resposta, guarda la informació del node.
+    @param sock: socket per escoltar els broadcasts.
+    """
     # Cada node tindrà un port random entre 25000 i 26000
     # Només es permeten 1000 nodes
-    port = 25000 + random.randint(0, 1000)
+   
     
     
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    sock.bind(('', port))  # Cambiado a puerto 5000
+   
 
     while True:
         data, addr = sock.recvfrom(1024)
-        
+     
         # parse data
-        parts = data.decode().split(";")
-        if len(parts) == 2 and parts[0] == "Discovery":
-            ipport = parts[1]
-            if ipport not in ipports:
-                ipports.append(ipport)
-                print(f"Added {ipport} to ipports")
-                # Com és una trama broadcast, no cal respondre, així no sobrecarreguem la xarxa
+        # si empieza por Discovery; es un mensaje de descubrimiento
+        if data.startswith(b"Discovery;"):
+            parts = data.decode().split(";")
+            if len(parts) == 2 and parts[0] == "Discovery":
+                ipport = parts[1]
+                if ipport not in ipports:
+                    ipports.append(ipport)
+                    try:
+                        response = "DiscoveryResponse;-;"+node_service.parseJson()
+                        sock.sendto(response.encode(), addr)
+                    except Exception as e:
+                        print("Error sending response: "+str(e))
+                    
+        # si empieza por DiscoveryResponse; es un mensaje de respuesta
+        elif data.startswith(b"DiscoveryResponse;"):
+        
+            parts = data.decode().split(";-;")
+
+            if len(parts) == 2 and parts[0] == "DiscoveryResponse":
+                data = parts[1]
+                data = data.encode()
+                # decode the response, we get the json and add manually to the list
+                data = data.decode()
+                data = json.loads(data)
+                # we recieve key=>value con los valores para no perder consistencia
+                # no se recibe ippuertos, sino valores para añadir a la lista
+                for key in data:
+                    node_service.store[key] = data[key]
+                   
+                
         
 
-def send_broadcast(ipport):
-    """Función que envia una trama broadcast a tots els ports enre 25000 i 26000."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
+def send_broadcast(ipport,sock):
+    """Función que envia una trama broadcast a tots els ports enre 25000 i 26000.
+    Parametros:
+    @param ipport -- ip i port del node actual
+    @param sock -- socket per enviar els broadcasts
+    """
     for port in range(25000, 26000):
         sock.sendto(b"Discovery;"+bytes(ipport,"utf-8"), ('255.255.255.255', port))  # Cambiado a puerto 5000
         
@@ -61,12 +87,18 @@ def send_broadcast(ipport):
 
 def main(port):
     # encendemos el listener de broadcasts
+    port_socket = 25000 + random.randint(0, 1000)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    
+    sock.bind(('', port_socket))  # Cambiado a puerto 5000
     listener_thread = futures.ThreadPoolExecutor(max_workers=1)
-    listener_thread.submit(listen_for_broadcasts)
+    listener_thread.submit(listen_for_broadcasts,sock)
     ipport_loc = "localhost:"+str(port)
     node_service.setnodeIdentifier("Node"+str(port))
     node_service.load_values()
-    send_broadcast(ipport_loc)
+    send_broadcast(ipport_loc,sock)
     # si es el segundo ponemos voto 2
     if port == 32771:
         # TODO Que fem amb això?
@@ -80,7 +112,9 @@ def main(port):
     iniciar_grpcApi(port)
 
 def iniciar_grpcApi(port):
-    """Funció que inicialitza el servidor gRPC."""
+    """Funció que inicialitza el servidor gRPC.
+    @param port: port del servidor gRPC.
+    """
     # Inicialitzem el servidor gRPC
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     store_pb2_grpc.add_KeyValueStoreServicer_to_server(node_service, server)
@@ -91,8 +125,10 @@ def iniciar_grpcApi(port):
     server.wait_for_termination()
     
     
-def askPutVote(store, put_request, context):
-    """Funció que fa una votació per fer un put."""
+def askPutVote(put_request):
+    """Funció que fa una votació per fer un put.
+    @param put_request: petició de put que ha rebut
+    """
     # send a vote request to all nodes
     try:
         votos_totales = 0
@@ -130,7 +166,7 @@ def askPutVote(store, put_request, context):
         return False
         
     
-def askGetVote(store, get_request, context, local_value, local_vote_size):
+def askGetVote( get_request,  local_value, local_vote_size):
     # send a vote request to all nodes
     try:
         values ={}

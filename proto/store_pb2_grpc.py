@@ -47,7 +47,7 @@ class KeyValueStoreStub(object):
         self.discoverMessage = channel.unary_unary(
                 '/distributedstore.KeyValueStore/discoverMessage',
                 request_serializer=store__pb2.dMessage.SerializeToString,
-                response_deserializer=store__pb2.Empty.FromString,
+                response_deserializer=store__pb2.dResponse.FromString,
                 )
         self.askVotePut = channel.unary_unary(
                 '/distributedstore.KeyValueStore/askVotePut',
@@ -154,7 +154,7 @@ def add_KeyValueStoreServicer_to_server(servicer, server):
             'discoverMessage': grpc.unary_unary_rpc_method_handler(
                     servicer.discoverMessage,
                     request_deserializer=store__pb2.dMessage.FromString,
-                    response_serializer=store__pb2.Empty.SerializeToString,
+                    response_serializer=store__pb2.dResponse.SerializeToString,
             ),
             'askVotePut': grpc.unary_unary_rpc_method_handler(
                     servicer.askVotePut,
@@ -291,7 +291,7 @@ class KeyValueStore(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/discoverMessage',
             store__pb2.dMessage.SerializeToString,
-            store__pb2.Empty.FromString,
+            store__pb2.dResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

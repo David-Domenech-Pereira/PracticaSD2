@@ -44,6 +44,12 @@ class dMessage(_message.Message):
     port: int
     def __init__(self, ip: _Optional[str] = ..., port: _Optional[int] = ...) -> None: ...
 
+class dResponse(_message.Message):
+    __slots__ = ("data",)
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    data: str
+    def __init__(self, data: _Optional[str] = ...) -> None: ...
+
 class doCommitRespone(_message.Message):
     __slots__ = ("success",)
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
