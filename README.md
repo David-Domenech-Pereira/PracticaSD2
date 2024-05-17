@@ -1,7 +1,45 @@
 # Distributed storage systems and the CAP theorem
 
+This project is developed under the course of Distributed Systems at the Universitat Rovira i Virgili, Tarragona, Spain. The project aims to implement two distributed storage systems, a centralized and a decentralized one, and evaluate their performance in terms of the CAP theorem.
+
+For more information, please refer to the project documentation.
+
+@Authors: Assmaa Ouladali (assmaa.ouladali@estudiants.urv.cat) and David Domènech Pereira Da Silva (david.domenechp@estudiants.urv.cat)
+
+Copyright 2024, Universitat Rovira i Virgili, Tarragona, Spain
+
+# Running the centralized and decentralized storage systems
+
+To run the centralized storage system, use the following command:
+
+```bash python centralized.py```
+
+To run the decentralized storage system, use the following command:
+
+```bash python decentralized.py```
+
+To run the tests for the centralized storage system, use the following command:
+
+```bash python eval/test_centralized_system.py```
+
+To run the tests for the decentralized storage system, use the following command:
+
+```bash python eval/test_decentralized_system.py```
+
+To run both tests, use the following command:
+
+```bash python eval/eval.py```
+
+# Directory Structure
 ```
 Project/
+
+├── README.md
+├── centralized/
+│   ├── master.py
+│   ├── slave.py
+├── decentralized/
+│   ├── node.py 
 │
 ├── proto/
 │   ├── store.proto
@@ -15,10 +53,14 @@ Project/
 │   ├── test_centralized_system.py
 │   └── test_decentralized_system.py
 │
-└── ...
+
 ```
 
 ## Directory Structure Explanation
+
+- **centralized.py**: Contains the implementation of the centralized storage system. The system is implemented as a gRPC server that listens for requests from clients. The server stores key-value pairs in memory and responds to client requests for reading and writing data.
+
+- **decentralized.py**: Contains the implementation of the decentralized storage system. The system is implemented as a gRPC server that listens for requests from clients. The server stores key-value pairs in memory and responds to client requests for reading and writing data. The decentralized system uses a gossip protocol to replicate data across multiple nodes in the system.
 
 - **proto/**: Contains Protocol Buffer files used for defining gRPC services and messages. Generated Python files (`store_pb2.py` and `store_pb2_grpc.py`) based on `store.proto` should be stored here.
 
@@ -28,38 +70,8 @@ Project/
 
   - **test_centralized_system.py**: Script containing unit tests for the centralized system.
 
-    - ***Sample***: 
-
-    ```
-    master:
-      ip: <IP>
-      port: <Port>
-
-    slaves:
-      - id: <slave_1_ID>
-        ip: <slave_1_IP>
-        port: <slave_1_Port>
-      - id: <slave_2_ID>
-        ip: <slave_2_IP>
-        port: <slave_2_Port>
-      ...
-      ```
+    
   
   - **test_decentralized_system.py**: Script containing unit tests for the decentralized system.
 
-      - ***Sample***: 
-
-    ```
-    nodes:
-      - id: <node_1_ID>
-        ip: <node_1_IP>
-        port: <node_1_Port>
-      - id: <node_2_ID>
-        ip: <node_2_IP>
-        port: <node_2_Port>
-      ...
-      ```
-
-Each component of the project is organized into its respective directory, facilitating clear separation of concerns and ease of navigation. The `eval` directory specifically houses test scripts for evaluating the functionality and correctness of the implemented systems.
-
-> **Note:** Students are required to define the necessary stubs for implementing the Two Phase Commit (2PC) protocol and for node registration in the system. These stubs must be manually added to the store.proto file by the students as part of their implementation.
+    
