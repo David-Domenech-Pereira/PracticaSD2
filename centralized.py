@@ -16,7 +16,6 @@ def iniciar_threadSlaves():
     ports = [32771, 32772]
     n_threads = len(ports)
     for i in range(n_threads):
-        print('Starting slave on port: '+str(ports[i]))
         thread = threading.Thread(target=slave.main, args=(ports[i],))
         thread.start()
         

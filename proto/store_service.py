@@ -151,7 +151,6 @@ class NodeService(StoreService):
         # si no devolver success = False
         value = self.store.get(vote_request.key)
         time.sleep(self.slow_down_seconds)
-        print("Vote request for key: "+vote_request.key+" value: "+str(value)+" vote_size: "+str(self.vote_size))
         if value is None:
             return store_pb2.askVoteGetRespone(success=False, vote_size=self.vote_size, value="")
         return store_pb2.askVoteGetRespone(success=True, vote_size=self.vote_size, value=value)

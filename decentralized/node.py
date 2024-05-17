@@ -31,18 +31,14 @@ def listen_for_broadcasts(sock):
     """
     # Cada node tindrà un port random entre 25000 i 26000
     # Només es permeten 1000 nodes
-   
-    
-    
-   
-
     while True:
         data, addr = sock.recvfrom(1024)
      
         # parse data
         # si empieza por Discovery; es un mensaje de descubrimiento
         if data.startswith(b"Discovery;"):
-            parts = data.decode().split(";")
+            parts = data.decode().split(";") 
+            # Comprovem que sigui un missatge correcte
             if len(parts) == 2 and parts[0] == "Discovery":
                 ipport = parts[1]
                 if ipport not in ipports:
@@ -60,15 +56,12 @@ def listen_for_broadcasts(sock):
 
             if len(parts) == 2 and parts[0] == "DiscoveryResponse":
                 data = parts[1]
-                data = data.encode()
-                # decode the response, we get the json and add manually to the list
-                data = data.decode()
                 data = json.loads(data)
                 # we recieve key=>value con los valores para no perder consistencia
                 # no se recibe ippuertos, sino valores para añadir a la lista
                 for key in data:
                     node_service.store[key] = data[key]
-                   
+                    node_service.store_values(key, data[key])
                 
         
 
@@ -92,7 +85,7 @@ def main(port):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     
-    sock.bind(('', port_socket))  # Cambiado a puerto 5000
+    sock.bind(('', port_socket))  # Cambiado a puerto correcto
     listener_thread = futures.ThreadPoolExecutor(max_workers=1)
     listener_thread.submit(listen_for_broadcasts,sock)
     ipport_loc = "localhost:"+str(port)
@@ -101,7 +94,6 @@ def main(port):
     send_broadcast(ipport_loc,sock)
     # si es el segundo ponemos voto 2
     if port == 32771:
-        # TODO Que fem amb això?
         print("Vote size 2")
         node_service.setVoteSize(2)
         this_vote_size = 2
@@ -140,15 +132,14 @@ def askPutVote(put_request):
             # fem la crida grpc
             channel = grpc.insecure_channel(ipport)
             stub = store_pb2_grpc.KeyValueStoreStub(channel)
-            doCommit = store_pb2.askVotePutRequest(key=put_request.key, value=put_request.value)
-            pot = stub.askVotePut(doCommit)
+            requestObject = store_pb2.askVotePutRequest(key=put_request.key, value=put_request.value)
+            pot = stub.askVotePut(requestObject)
             if pot.success:
                 # si ha dit que si sumem els vots
                 votos_totales += pot.vote_size
-        print("Votos totales: "+str(votos_totales))
         #si es >= quorum_put
         if votos_totales >= quorum_put:
-            print("DoCommit")
+           
             # hacemos un doCommit
             for ipport in ipports:
                 channel = grpc.insecure_channel(ipport)

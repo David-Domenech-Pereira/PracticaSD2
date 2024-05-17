@@ -12,7 +12,7 @@ store = {}
 
 def main(port):
     store_service.set_store(store)
-    store_service.setnodeIdentifier("Slave")
+    store_service.setnodeIdentifier("Slave"+str(port))
     store_service.load_values()
     registrarClient("localhost",port)
     
@@ -28,7 +28,6 @@ def iniciar_grpcApi(port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     store_pb2_grpc.add_KeyValueStoreServicer_to_server(store_service, server)
     #will run the master node on port 32770
-    print('localhost:'+str(port))
     server.add_insecure_port('localhost:'+str(port))
     server.start()
     server.wait_for_termination()
@@ -48,10 +47,10 @@ def registrarClient(ip, port):
     
     # decode the response, we get the json and add manually to the list
     data = response.data
-    print(data)
     data = json.loads(data)
     # we recieve key=>value con los valores para no perder consistencia
     # no se recibe ippuertos, sino valores para añadir a la lista
     for key in data:
         store_service.store[key] = data[key]
+        store_service.store_values(key, data[key])
     
